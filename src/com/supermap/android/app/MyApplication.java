@@ -83,7 +83,12 @@ public class MyApplication extends Application {
 	  * ÍË³öÓ¦ÓÃ                  
 	  */
 	public void exit(){
-		mWorkspace.save();
+		try {
+			mWorkspace.save();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		mWorkspace.close();
 		mInfo.dispose();
 		mWorkspace.dispose();

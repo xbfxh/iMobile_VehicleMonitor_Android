@@ -616,7 +616,12 @@ public class DisplayManager {
  
 			String mapXML = mMapView.getMapControl().getMap().toXML();
 			workspace.getMaps().setMapXML(0, mapXML);
-			workspace.save();
+			try {
+				workspace.save();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		editLayer = mMapView.getMapControl().getMap().getLayers().get(0);
