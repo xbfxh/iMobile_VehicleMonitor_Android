@@ -4,6 +4,45 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import com.supermap.CarsMonitorDemo.R;
+import com.supermap.android.communication.CarData;
+import com.supermap.data.CoordSysTransMethod;
+import com.supermap.data.CoordSysTransParameter;
+import com.supermap.data.CoordSysTranslator;
+import com.supermap.data.CursorType;
+import com.supermap.data.Dataset;
+import com.supermap.data.DatasetType;
+import com.supermap.data.DatasetVector;
+import com.supermap.data.DatasetVectorInfo;
+import com.supermap.data.Datasource;
+import com.supermap.data.DatasourceConnectionInfo;
+import com.supermap.data.Datasources;
+import com.supermap.data.EngineType;
+import com.supermap.data.Environment;
+import com.supermap.data.GeoStyle;
+import com.supermap.data.Point2D;
+import com.supermap.data.Point2Ds;
+import com.supermap.data.PrjCoordSys;
+import com.supermap.data.PrjCoordSysType;
+import com.supermap.data.Recordset;
+import com.supermap.data.Workspace;
+import com.supermap.mapping.Action;
+import com.supermap.mapping.GeometryAddedListener;
+import com.supermap.mapping.GeometryEvent;
+import com.supermap.mapping.Layer;
+import com.supermap.mapping.LayerSettingVector;
+import com.supermap.mapping.Layers;
+import com.supermap.mapping.MapView;
+import com.supermap.mapping.TrackingLayer;
+import com.supermap.mapping.dyn.DynamicElement;
+import com.supermap.mapping.dyn.DynamicLine;
+import com.supermap.mapping.dyn.DynamicPoint;
+import com.supermap.mapping.dyn.DynamicPolygon;
+import com.supermap.mapping.dyn.DynamicStyle;
+import com.supermap.mapping.dyn.DynamicView;
+import com.supermap.mapping.dyn.TranslateAnimator;
+import com.supermap.mapping.dyn.ZoomAnimator;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -23,43 +62,6 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.PopupWindow;
 import android.widget.Switch;
 import android.widget.TextView;
-
-import com.supermap.android.communication.CarData;
-import com.supermap.data.CoordSysTransMethod;
-import com.supermap.data.CoordSysTransParameter;
-import com.supermap.data.CoordSysTranslator;
-import com.supermap.data.CursorType;
-import com.supermap.data.DatasetType;
-import com.supermap.data.DatasetVector;
-import com.supermap.data.DatasetVectorInfo;
-import com.supermap.data.Datasource;
-import com.supermap.data.DatasourceConnectionInfo;
-import com.supermap.data.Datasources;
-import com.supermap.data.EngineType;
-import com.supermap.data.Environment;
-import com.supermap.data.GeoStyle;
-import com.supermap.data.Point2D;
-import com.supermap.data.Point2Ds;
-import com.supermap.data.PrjCoordSys;
-import com.supermap.data.PrjCoordSysType;
-import com.supermap.data.Recordset;
-import com.supermap.data.Workspace;
-import com.supermap.CarsMonitorDemo.R;
-import com.supermap.mapping.Action;
-import com.supermap.mapping.GeometryAddedListener;
-import com.supermap.mapping.GeometryEvent;
-import com.supermap.mapping.Layer;
-import com.supermap.mapping.LayerSettingVector;
-import com.supermap.mapping.MapView;
-import com.supermap.mapping.TrackingLayer;
-import com.supermap.mapping.dyn.DynamicElement;
-import com.supermap.mapping.dyn.DynamicLine;
-import com.supermap.mapping.dyn.DynamicPoint;
-import com.supermap.mapping.dyn.DynamicPolygon;
-import com.supermap.mapping.dyn.DynamicStyle;
-import com.supermap.mapping.dyn.DynamicView;
-import com.supermap.mapping.dyn.TranslateAnimator;
-import com.supermap.mapping.dyn.ZoomAnimator;
 
 /**
  * 显示管理，所有的监控最终通过显示管理将结果显示出来
@@ -134,7 +136,7 @@ public class DisplayManager {
 				
 				mDomainMonitor.monitorDomainList(event);
 				
-				mMapView.getMapControl().removeGeometryAddedListener(mGeometryAddedListener);
+//				mMapView.getMapControl().removeGeometryAddedListener(mGeometryAddedListener);
 				//弄完后要恢复平移
 				mMapView.getMapControl().setAction(Action.PAN);
 				editLayer.setEditable(false);
@@ -556,6 +558,12 @@ public class DisplayManager {
 	 * @return
 	 */
 	public boolean drawRegion(){
+		if(editLayer != null){
+			editLayer.setEditable(true);
+			mMapView.getMapControl().setAction(Action.DRAWPLOYGON);
+			return true;
+		}
+		
 		Workspace workspace = mMapView.getMapControl().getMap().getWorkspace();
 		String datasourceName = "TempUDB";
 		
@@ -568,6 +576,7 @@ public class DisplayManager {
         geoStyle_R.setFillForeColor(new com.supermap.data.Color(149, 23,17));
         geoStyle_R.setFillBackOpaque(true);
         geoStyle_R.setFillOpaqueRate(40);
+       
         geoStyle_R.setLineWidth(0.1);
         geoStyle_R.setLineColor(new com.supermap.data.Color(40,40,40));
         LayerSettingVector layerSettingVector = new LayerSettingVector();
@@ -611,6 +620,18 @@ public class DisplayManager {
 				Log.e(this.getClass().getName(),"创建REGION失败了");
 				return false;
 			}
+			
+			// 确保新增数据集只关联一个图层 
+			Layers layers = mMapView.getMapControl().getMap().getLayers();
+			int count = layers.getCount();
+			Dataset datasetLayer = null;
+			ArrayList<Integer> removeIndexs = new ArrayList<Integer>();
+			if(count > 1){
+				for(int i=0; i<count-1; i++){
+				    layers.remove(0);   // 只保留最后一个图层
+				}
+			}
+			
 			Layer drawLayer = mMapView.getMapControl().getMap().getLayers().add(dataset, true);
 			drawLayer.setEditable(true);
  
@@ -622,13 +643,24 @@ public class DisplayManager {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+			editLayer = drawLayer;
+			
+			editLayer.setAdditionalSetting(layerSettingVector);
+		}else{
+			if (mMapView.getMapControl().getMap().getLayers().getCount() == 1) {
+				Datasource datasource = workspace.getDatasources().get(datasourceName);
+				Dataset dataset = datasource.getDatasets().get(0);
+				editLayer = mMapView.getMapControl().getMap().getLayers().add(dataset, true);
+			} else {
+				editLayer = mMapView.getMapControl().getMap().getLayers().get(0);
+			}
+			editLayer.setEditable(true);
+		    editLayer.setAdditionalSetting(layerSettingVector);
 		}
 		
-		editLayer = mMapView.getMapControl().getMap().getLayers().get(0);
 		
-		editLayer.setAdditionalSetting(layerSettingVector);
 		
-		editLayer.setEditable(true);
 		mMapView.getMapControl().setAction(Action.DRAWPLOYGON);
 		mMapView.getMapControl().addGeometryAddedListener(mGeometryAddedListener);
 		

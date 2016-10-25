@@ -161,16 +161,7 @@ public class MonitorActivity extends Activity implements OnTouchListener{
 				Toast.makeText(this, "再按一次退出程序！", Toast.LENGTH_SHORT ).show();
 				mExitEnable = true;
 			}else{
-				// 清空监控区
-				mDisplayManager.getDomainMonitor().clearMonitorDomain();
-				//释放当前资源
-				mMapView.getMapControl().getMap().close();
-				
-				//停止后台服务
-				Intent intent = new Intent();
-				intent.setAction("com.supermap.backstageservice.START");	
-				stopService(intent);
-				unregisterReceiver(mMessageReciver);
+				exit();
 				
 				//彻底退出程序
 				mApp.exit();
@@ -178,6 +169,27 @@ public class MonitorActivity extends Activity implements OnTouchListener{
 			return true;
 		}        
 		return super.onKeyDown(keyCode, event);
+	}
+	
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		exit();
+		super.onDestroy();
+	}
+
+
+	private void exit() {
+		// 清空监控区
+		mDisplayManager.getDomainMonitor().clearMonitorDomain();
+		//释放当前资源
+		mMapView.getMapControl().getMap().close();
+		
+		//停止后台服务
+		Intent intent = new Intent();
+		intent.setAction("com.supermap.backstageservice.START");	
+		stopService(intent);
+		unregisterReceiver(mMessageReciver);
 	}
 	
 	/**
